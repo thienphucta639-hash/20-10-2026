@@ -32,7 +32,7 @@ export default function CustomerSelect({
       <motion.h1
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="mb-2 text-center font-vt text-6xl leading-none text-glow-strong sm:text-8xl"
+        className="mb-2 whitespace-nowrap text-center font-vt text-[clamp(2.5rem,11vw,5rem)] leading-none text-glow-strong"
       >
         HÓA ĐƠN CHO AI?
       </motion.h1>
@@ -56,12 +56,12 @@ export default function CustomerSelect({
               confirmBeep();
               onPick(r);
             }}
-            className="pos-btn group relative px-6 py-8 text-left sm:py-10"
+            className="pos-btn group relative px-5 py-6 text-left sm:px-6 sm:py-10"
           >
             <span className="absolute right-3 top-2 font-vt text-lg text-[#00ff41]/40">
               F{i + 1}
             </span>
-            <span className="block font-vt text-4xl leading-none sm:text-5xl">
+            <span className="block whitespace-nowrap font-vt text-3xl leading-none sm:text-5xl">
               [ {r.shortName} ]
             </span>
             <span className="cut-line my-4 block opacity-60 transition-opacity group-hover:opacity-100" />

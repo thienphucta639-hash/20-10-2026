@@ -43,9 +43,9 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
 
   const REASONS = [
     "nguyên liệu: tự nguyện 100%",
-    "công thức: bí mật nhà, không sao chép",
-    "làm lúc bạn còn chưa thức dậy",
-    "lặp lại mỗi ngày, không phàn nàn",
+    "bí quyết nhà — không sao chép",
+    "làm khi bạn chưa thức dậy",
+    "lặp lại mãi, không phàn nàn",
     "sản xuất độc quyền tại gia",
   ];
   const billNo = `2010-${String(Math.floor(prand(years * 91) * 8999) + 1000)}`;
@@ -213,7 +213,7 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
             <div className="paper paper-ink px-6 py-10 font-plex text-[13.5px] leading-[1.95] sm:px-8">
               {/* ---------- HEADER ---------- */}
               <div className="text-center">
-                <div className="font-vt text-[2.6rem] leading-none tracking-wide">
+                <div className="whitespace-nowrap font-vt text-[2.2rem] leading-none tracking-wide sm:text-[2.6rem]">
                   HÓA ĐƠN VÔ HÌNH
                 </div>
                 <div className="mt-1 text-[10px] uppercase tracking-[0.28em] paper-ink-faded">
@@ -283,8 +283,8 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
                 ] as const
               ).map(([title, it, rows], li) => (
                 <div key={li} className={li === 1 ? "mt-4" : ""}>
-                  <div className="text-[10px] uppercase paper-ink-faded">
-                    {title} — theo dõi: {it.name.toLowerCase()} ({ledgerN}/{years} kỳ gần nhất)
+                  <div className="text-[10px] uppercase leading-snug paper-ink-faded">
+                    {title}: {it.name.toLowerCase()} — {ledgerN}/{years} kỳ
                   </div>
                   <div className="mt-1 space-y-[3px] text-[11px]">
                     {rows.map((r, i) => (
@@ -332,21 +332,30 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
               <div className="my-3">
                 <Div ch="═" />
               </div>
-              <div className="space-y-1 uppercase">
-                <div className="flex items-end">
-                  <span>tạm tính ({fmt(totalQty)} đ.vị vô hình)</span>
-                  <span className="dotted-leader" />
-                  <span className="font-bold">∞</span>
+              <div className="space-y-1.5 uppercase">
+                <div>
+                  <div>tạm tính</div>
+                  <div className="flex items-end">
+                    <span className="pl-4">{fmt(totalQty)} đơn vị vô hình</span>
+                    <span className="dotted-leader" />
+                    <span className="font-bold">∞</span>
+                  </div>
                 </div>
-                <div className="flex items-end">
-                  <span>thuế tình cảm (đã gồm)</span>
-                  <span className="dotted-leader" />
-                  <span className="font-bold">∞</span>
+                <div>
+                  <div>thuế tình cảm (đã gồm)</div>
+                  <div className="flex items-end">
+                    <span className="pl-4">trên mọi khoản</span>
+                    <span className="dotted-leader" />
+                    <span className="font-bold">∞</span>
+                  </div>
                 </div>
-                <div className="flex items-end">
-                  <span>phí tổn thương phát sinh</span>
-                  <span className="dotted-leader" />
-                  <span className="font-bold">∞</span>
+                <div>
+                  <div>phí tổn thương phát sinh</div>
+                  <div className="flex items-end">
+                    <span className="pl-4">tính từ lần đầu tiên</span>
+                    <span className="dotted-leader" />
+                    <span className="font-bold">∞</span>
+                  </div>
                 </div>
                 <div className="flex items-end paper-ink-faded">
                   <span>giảm giá khách quen</span>
@@ -367,8 +376,10 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
               </div>
 
               {/* ---------- WARNING ---------- */}
-              <div className="border-2 border-[#1c1c12]/80 px-4 py-4 text-center uppercase">
-                <div className="font-vt text-3xl leading-none">( ! ) không thể thanh toán</div>
+              <div className="border-2 border-[#1c1c12]/80 px-3 py-4 text-center uppercase sm:px-4">
+                <div className="whitespace-nowrap font-vt text-[1.35rem] leading-none sm:text-3xl">
+                  ( ! ) không thể thanh toán
+                </div>
                 <div className="mt-2 text-[11px] leading-relaxed">
                   nhưng có thể trả góp bằng sự quan tâm.
                   <br />
@@ -395,7 +406,7 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
                 - - - - - - - - xé dọc đường này - - - - - - - -
               </div>
               <div className="mt-2 border-2 border-dashed border-[#1c1c12]/60 px-4 py-4 text-center uppercase">
-                <div className="font-vt text-3xl leading-none">phiếu bảo hành trọn đời</div>
+                <div className="whitespace-nowrap font-vt text-[1.35rem] leading-none sm:text-3xl">phiếu bảo hành trọn đời</div>
                 <div className="mt-2 text-[10.5px] leading-relaxed">
                   áp dụng: mỗi khi bạn chịu quay về thăm.
                   <br />
@@ -442,32 +453,53 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
             transition={{ delay: 0.25, type: "spring", stiffness: 200, damping: 22 }}
             className="mx-auto mt-10 w-full max-w-[440px]"
           >
-            <div className="pos-panel p-5">
-              <div className="mb-4 text-center font-vt text-3xl text-glow">
+            <div className="pos-panel p-4 sm:p-5">
+              <div className="mb-4 whitespace-nowrap text-center font-vt text-2xl text-glow sm:text-3xl">
                 GỬI HÓA ĐƠN NÀY ĐI ĐÂU?
               </div>
               <div className="grid gap-3">
                 <button
                   onClick={capture}
                   disabled={busy}
-                  className="pos-btn pos-btn--fill flex items-center justify-center gap-3 px-4 py-4 text-2xl"
+                  className="pos-btn pos-btn--fill flex w-full items-center gap-3 px-4 py-3 text-left"
                 >
-                  <Camera className="h-5 w-5" strokeWidth={2.4} />
-                  CHỤP HÓA ĐƠN (PNG DỌC — VỪA STORY)
+                  <Camera className="h-6 w-6 shrink-0" strokeWidth={2.4} />
+                  <span>
+                    <span className="block font-vt text-2xl leading-none sm:text-3xl">
+                      CHỤP HÓA ĐƠN
+                    </span>
+                    <span className="mt-1 block font-plex text-[10px] uppercase tracking-[0.12em] opacity-75">
+                      png dọc — vừa story 9:16
+                    </span>
+                  </span>
                 </button>
                 <button
                   onClick={copyLink}
-                  className="pos-btn flex items-center justify-center gap-3 px-4 py-4 text-2xl"
+                  className="pos-btn flex w-full items-center gap-3 px-4 py-3 text-left"
                 >
-                  <Link2 className="h-5 w-5" strokeWidth={2.4} />
-                  CHIA SẺ LINK HÓA ĐƠN
+                  <Link2 className="h-6 w-6 shrink-0" strokeWidth={2.4} />
+                  <span>
+                    <span className="block font-vt text-2xl leading-none sm:text-3xl">
+                      SAO CHÉP LINK
+                    </span>
+                    <span className="mt-1 block font-plex text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      ai mở cũng thấy hóa đơn này in ra
+                    </span>
+                  </span>
                 </button>
                 <button
                   onClick={onRestart}
-                  className="pos-btn flex items-center justify-center gap-3 px-4 py-3 text-2xl"
+                  className="pos-btn flex w-full items-center gap-3 px-4 py-3 text-left"
                 >
-                  <RotateCcw className="h-5 w-5" strokeWidth={2.4} />
-                  {fromShare ? "TÍNH HÓA ĐƠN CHO NGƯỜI CỦA MÌNH" : "TÍNH HÓA ĐƠN MỚI"}
+                  <RotateCcw className="h-6 w-6 shrink-0" strokeWidth={2.4} />
+                  <span>
+                    <span className="block font-vt text-2xl leading-none sm:text-3xl">
+                      TÍNH HÓA ĐƠN MỚI
+                    </span>
+                    <span className="mt-1 block font-plex text-[10px] uppercase tracking-[0.12em] text-white/40">
+                      {fromShare ? "lần này tính cho người thương mình" : "khởi động lại máy pos"}
+                    </span>
+                  </span>
                 </button>
               </div>
               <div className="mt-3 flex h-5 items-center justify-center text-[11px] uppercase tracking-[0.25em] text-glow">
@@ -482,12 +514,14 @@ export default function ReceiptView({ rel, raws, fromShare, onRestart }: Props) 
 
             {/* ---------- CLOSING QUOTE ---------- */}
             <div className="mt-16 text-center">
-              <div className="font-vt text-4xl leading-tight text-glow sm:text-5xl">
-                HÓA ĐƠN NÀY DÀI HƠN BẠN NGHĨ.
-                <br />
-                NHƯNG CÔ ẤY CHƯA BAO GIỜ
-                <br />
-                ĐÒI BẠN TRẢ.
+              <div
+                className="font-vt leading-tight text-glow"
+                style={{ fontSize: "clamp(1.55rem, 7vw, 2.25rem)" }}
+              >
+                <span className="block whitespace-nowrap">HÓA ĐƠN NÀY DÀI HƠN</span>
+                <span className="block whitespace-nowrap">BẠN NGHĨ.</span>
+                <span className="block whitespace-nowrap">NHƯNG CÔ ẤY CHƯA BAO GIỜ</span>
+                <span className="block whitespace-nowrap">ĐÒI BẠN TRẢ.</span>
               </div>
               <div className="mt-6 text-[10px] uppercase tracking-[0.4em] text-dim-green">
                 — 20 tháng 10 · ngày phụ nữ việt nam —

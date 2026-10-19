@@ -22,7 +22,8 @@ function Clock() {
   const pad = (n: number) => String(n).padStart(2, "0");
   return (
     <span className="tabular-nums">
-      20/10/2025&nbsp;&nbsp;{pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}
+      <span className="hidden sm:inline">20/10/2025&nbsp;&nbsp;</span>
+      {pad(now.getHours())}:{pad(now.getMinutes())}:{pad(now.getSeconds())}
     </span>
   );
 }
@@ -67,7 +68,8 @@ export default function App() {
       <header className="sticky top-0 z-40 border-b border-[#00ff41]/20 bg-[#0a0a0a]/85 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-2.5 font-plex text-[10px] uppercase tracking-[0.22em] text-[#00ff41]/70 sm:text-xs">
           <span className="flex items-center gap-2">
-            <span className={stage === "receipt" ? "" : "blink"}>▮</span> POS-20/10 · HĐVH v1.0
+            <span className={stage === "receipt" ? "" : "blink"}>▮</span> POS-20/10
+            <span className="hidden sm:inline">· HĐVH v1.0</span>
           </span>
           <span className="hidden md:inline">ca trực: 20:10 → ∞ · thu ngân: quản gia</span>
           <span className="flex items-center gap-4">

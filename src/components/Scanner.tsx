@@ -104,7 +104,7 @@ export default function Scanner({ rel, onDone }: Props) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* ================= LEFT: QUESTION / PAY ================= */}
         <div className="lg:col-span-3">
-          <div className="pos-panel relative flex min-h-[420px] flex-col p-6 sm:p-8">
+          <div className="pos-panel relative flex flex-col p-5 sm:min-h-[420px] sm:p-8">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-glow">
                 <ScanBarcode className="h-5 w-5" strokeWidth={2.4} />
@@ -154,25 +154,27 @@ export default function Scanner({ rel, onDone }: Props) {
                   {/* INPUT ZONE */}
                   <div className="mt-8">
                     {q.input === "number" ? (
-                      <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
-                        <input
-                          ref={inputRef}
-                          type="number"
-                          inputMode="numeric"
-                          min={q.min}
-                          max={q.max}
-                          value={Number.isFinite(raw) ? String(raw) : ""}
-                          onChange={(e) =>
-                            setRaw(e.target.value === "" ? 0 : Number(e.target.value))
-                          }
-                          className="pos-input w-48 max-w-full text-center font-vt text-6xl leading-none sm:text-7xl"
-                        />
-                        <span className="pb-2 font-vt text-2xl text-[#00ff41]/60">
-                          {q.unitLabel}
-                        </span>
-                        <span className="pb-2 text-[10px] uppercase tracking-[0.2em] text-white/30">
-                          (từ {q.min} đến {fmt(q.max)})
-                        </span>
+                      <div>
+                        <div className="flex items-end gap-x-4">
+                          <input
+                            ref={inputRef}
+                            type="number"
+                            inputMode="numeric"
+                            min={q.min}
+                            max={q.max}
+                            value={Number.isFinite(raw) ? String(raw) : ""}
+                            onChange={(e) =>
+                              setRaw(e.target.value === "" ? 0 : Number(e.target.value))
+                            }
+                            className="pos-input w-40 max-w-full text-center font-vt text-5xl leading-none sm:w-48 sm:text-7xl"
+                          />
+                          <span className="pb-1.5 font-vt text-xl text-[#00ff41]/60 sm:text-2xl">
+                            {q.unitLabel}
+                          </span>
+                        </div>
+                        <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/30">
+                          (nhập từ {q.min} đến {fmt(q.max)} — chạm 2 lần để sửa)
+                        </div>
                       </div>
                     ) : (
                       <div>
@@ -192,9 +194,9 @@ export default function Scanner({ rel, onDone }: Props) {
                           step={q.step}
                           value={raw}
                           onChange={(e) => setRaw(Number(e.target.value))}
-                          className="pos-range"
+                          className="pos-range mt-2"
                         />
-                        <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.2em] text-white/30">
+                        <div className="mt-3 flex justify-between text-[10px] uppercase tracking-[0.15em] text-white/30">
                           <span>ít thôi (chắc?)</span>
                           <span>thành thật đi</span>
                         </div>
@@ -239,7 +241,7 @@ export default function Scanner({ rel, onDone }: Props) {
                   <div className="text-[10px] uppercase tracking-[0.35em] text-dim-green">
                     đã quét đủ {qs.length}/{qs.length} mặt hàng vô hình
                   </div>
-                  <div className="mt-4 font-vt text-[6rem] leading-none text-glow-strong sm:text-[8rem]">
+                  <div className="mt-4 font-vt text-[3.3rem] leading-none text-glow-strong sm:text-[6.5rem]">
                     <Odometer value={totalQty} />
                   </div>
                   <div className="mt-1 text-xs uppercase tracking-[0.3em] text-white/40">
@@ -249,7 +251,7 @@ export default function Scanner({ rel, onDone }: Props) {
                   <button
                     onClick={pay}
                     disabled={busy}
-                    className="pos-btn pos-btn--fill mt-10 w-full px-6 py-6 text-5xl sm:text-6xl"
+                    className="pos-btn pos-btn--fill mt-10 w-full whitespace-nowrap px-6 py-5 text-[2.1rem] sm:py-6 sm:text-6xl"
                   >
                     [ THANH TOÁN ]
                   </button>
@@ -264,7 +266,7 @@ export default function Scanner({ rel, onDone }: Props) {
 
         {/* ================= RIGHT: LIVE PREVIEW ================= */}
         <div className="lg:col-span-2">
-          <div className="pos-panel dash-box relative flex min-h-[420px] flex-col p-5 sm:p-6">
+          <div className="pos-panel dash-box relative flex min-h-[280px] flex-col p-5 sm:p-6 lg:min-h-[420px]">
             <div className="flex items-center justify-between">
               <span className="font-vt text-2xl tracking-wide text-glow">PHIẾU TẠM TÍNH</span>
               <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
@@ -307,7 +309,7 @@ export default function Scanner({ rel, onDone }: Props) {
               <div className="text-[10px] uppercase tracking-[0.3em] text-dim-green">
                 tổng hạng mục chưa thanh toán
               </div>
-              <div className="mt-1 font-vt text-5xl leading-none text-glow sm:text-6xl">
+              <div className="mt-1 font-vt text-[2.6rem] leading-none text-glow sm:text-6xl">
                 <Odometer value={totalQty} />
               </div>
               <div className="mt-2 flex items-end justify-between font-plex text-[11px] text-white/40">

@@ -112,7 +112,7 @@ export const RELS: Record<RelKey, RelConfig> = {
   },
   vo: {
     key: "vo",
-    shortName: "VỢ / NGƯỜI YÊU",
+    shortName: "VỢ/NGƯỜI YÊU",
     fullName: "NGƯỜI ĐỒNG HÀNH",
     tagline: "TÀI KHOẢN MỞ TỪ BUỔI HẸN ĐẦU TIÊN",
     ageHint: "NGƯỜI CHỌN Ở LẠI SAU CẢ NHỮNG NGÀY XẤU XÍ NHẤT",

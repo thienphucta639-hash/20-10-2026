@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { confirmBeep, errorBuzz, keyTick } from "../lib/sound";
 
+// lines kept <= 29 chars so they never wrap on a 360px phone
 const BOOT_LINES = [
-  "> KHỞI ĐỘNG HỆ THỐNG POS-20/10 ............ OK",
-  "> KIỂM TRA GIẤY IN NHIỆT .................. OK",
-  "> NẠP MỰC CẢM XÚC ......................... OK",
-  "> MỞ CA LÀM VIỆC: 20/10 ................... OK",
-  "> ĐANG TẢI DỮ LIỆU VÔ HÌNH...",
-  "> PHÁT HIỆN: 1.847.293 KHOẢN CHƯA THANH TOÁN",
+  "> KHỞI ĐỘNG HỆ THỐNG .. OK",
+  "> GIẤY IN NHIỆT ...... OK",
+  "> MỰC CẢM XÚC ........ OK",
+  "> MỞ CA: 20/10 ....... OK",
+  "> TẢI DỮ LIỆU VÔ HÌNH...",
+  "> PHÁT HIỆN KHOẢN NỢ:",
+  "  1.847.293 CHƯA THANH TOÁN",
   "> BẮT ĐẦU TÍNH HÓA ĐƠN? [Y/N]",
 ];
 
@@ -56,7 +58,11 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
     if (phaseRef.current !== "prompt") return;
     setPhase("accepted");
     confirmBeep();
-    setDone((d) => [...d, "> [Y] — XÁC NHẬN. ĐANG MỞ DANH MỤC KHÁCH HÀNG..."]);
+    setDone((d) => [
+      ...d,
+      "> [Y] — XÁC NHẬN.",
+      "> ĐANG MỞ HỒ SƠ KHÁCH HÀNG...",
+    ]);
     setTimeout(() => onDoneRef.current(), 950);
   };
 
@@ -67,9 +73,11 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
     errorBuzz();
     setDone((d) => [
       ...d,
-      "> [N] — MÃ LỖI 201025: HÓA ĐƠN NÀY KHÔNG THỂ TỪ CHỐI.",
-      "> NGƯỜI ẤY ĐÃ TRẢ TRƯỚC BẰNG CẢ THANH XUÂN.",
-      "> HỆ THỐNG VẪN ĐANG CHỜ PHÍM [Y] _",
+      "> [N] — LỖI 20/10:",
+      "  HÓA ĐƠN NÀY KHÔNG THỂ TỪ CHỐI.",
+      "> NGƯỜI ẤY ĐÃ TRẢ TRƯỚC",
+      "  BẰNG CẢ THANH XUÂN.",
+      "> VUI LÒNG NHẤN [Y] _",
     ]);
   };
 
@@ -103,18 +111,18 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
       onClick={speedUp}
     >
       <div className="w-full max-w-3xl">
-        <div className="mb-6 flex items-end justify-between text-[10px] uppercase tracking-[0.3em] text-dim-green sm:text-xs">
-          <span>HĐVH BIOS v20.10 — BẢN PHÁT HÀNH ĐẶC BIỆT</span>
-          <span className={fast ? "opacity-0" : "blink"}>NHẤN PHÍM BẤT KỲ ĐỂ NHANH HƠN</span>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-2 text-[9px] uppercase tracking-[0.25em] text-dim-green sm:text-xs sm:tracking-[0.3em]">
+          <span>BIOS v20.10 — HĐVH POS</span>
+          <span className={fast ? "opacity-0" : "blink"}>CHẠM/NHẤN PHÍM ĐỂ NHANH HƠN</span>
         </div>
 
-        <div className="pos-panel relative p-6 sm:p-10">
+        <div className="pos-panel relative p-4 sm:p-10">
           <span className="absolute -left-1 -top-3 font-vt text-2xl text-[#00ff41]/60">+</span>
           <span className="absolute -right-1 -top-3 font-vt text-2xl text-[#00ff41]/60">+</span>
           <span className="absolute -bottom-3 -left-1 font-vt text-2xl text-[#00ff41]/60">+</span>
           <span className="absolute -bottom-3 -right-1 font-vt text-2xl text-[#00ff41]/60">+</span>
 
-          <div className="space-y-1.5 font-vt text-2xl leading-snug sm:text-[1.9rem]">
+          <div className="space-y-1.5 font-vt text-xl leading-snug sm:text-[1.9rem]">
             {done.map((l, i) => (
               <div
                 key={i}
@@ -151,7 +159,7 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
                   e.stopPropagation();
                   accept();
                 }}
-                className="pos-btn pos-btn--fill px-10 py-3 text-3xl sm:text-4xl"
+                className="pos-btn pos-btn--fill px-7 py-2.5 text-3xl sm:px-10 sm:py-3 sm:text-4xl"
               >
                 [ Y ] — ĐỒNG Ý
               </button>
