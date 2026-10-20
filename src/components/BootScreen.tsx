@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { confirmBeep, errorBuzz, keyTick } from "../lib/sound";
+import { chipTap, denyKlaxon, dialKey } from "../lib/sound";
 
 // lines kept <= 29 chars so they never wrap on a 360px phone
 const BOOT_LINES = [
@@ -38,15 +38,15 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
         for (let i = 1; i <= line.length; i++) {
           if (!alive) return;
           setCurrent(line.slice(0, i));
-          await sleep(speedRef.current ? 2 : 24);
+          await sleep(speedRef.current ? 2 : 34);
         }
         if (!alive) return;
         setDone((d) => [...d, line]);
         setCurrent("");
-        await sleep(speedRef.current ? 30 : 360);
+        await sleep(speedRef.current ? 30 : 720);
       }
       if (!alive) return;
-      keyTick();
+      chipTap();
       setPhase("prompt");
     })();
     return () => {
@@ -57,20 +57,20 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
   const accept = () => {
     if (phaseRef.current !== "prompt") return;
     setPhase("accepted");
-    confirmBeep();
+    dialKey(1);
     setDone((d) => [
       ...d,
       "> [Y] — XÁC NHẬN.",
       "> ĐANG MỞ HỒ SƠ KHÁCH HÀNG...",
     ]);
-    setTimeout(() => onDoneRef.current(), 950);
+    setTimeout(() => onDoneRef.current(), 1600);
   };
 
   const refuse = () => {
     if (phaseRef.current !== "prompt" || refusedRef.current) return;
     refusedRef.current = true;
     setRefused(true);
-    errorBuzz();
+    denyKlaxon();
     setDone((d) => [
       ...d,
       "> [N] — LỖI 20/10:",
@@ -107,13 +107,12 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
 
   return (
     <div
-      className="relative flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4 py-10"
+      className="screen-h-nav safe-x relative flex items-center justify-center px-4 py-10"
       onClick={speedUp}
     >
       <div className="w-full max-w-3xl">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-2 text-[9px] uppercase tracking-[0.25em] text-dim-green sm:text-xs sm:tracking-[0.3em]">
-          <span>BIOS v20.10 — HĐVH POS</span>
-          <span className={fast ? "opacity-0" : "blink"}>CHẠM/NHẤN PHÍM ĐỂ NHANH HƠN</span>
+        <div className="mb-4 text-right text-[9px] uppercase tracking-[0.25em] text-dim-green sm:text-xs">
+          <span className={fast ? "opacity-0" : "blink"}>chạm để chạy nhanh</span>
         </div>
 
         <div className="pos-panel relative p-4 sm:p-10">
@@ -159,7 +158,7 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
                   e.stopPropagation();
                   accept();
                 }}
-                className="pos-btn pos-btn--fill px-7 py-2.5 text-3xl sm:px-10 sm:py-3 sm:text-4xl"
+                className="pos-btn pos-btn--fill min-h-[3.25rem] px-7 py-2 text-3xl sm:px-10 sm:text-4xl"
               >
                 [ Y ] — ĐỒNG Ý
               </button>
@@ -169,7 +168,7 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
                   refuse();
                 }}
                 disabled={refused}
-                className={`pos-btn px-8 py-3 text-3xl sm:text-4xl ${
+                className={`pos-btn min-h-[3.25rem] px-8 py-2 text-3xl sm:text-4xl ${
                   refused ? "cursor-not-allowed opacity-25" : ""
                 }`}
               >
@@ -182,8 +181,9 @@ export default function BootScreen({ onDone }: { onDone: () => void }) {
           )}
         </div>
 
-        <div className="mt-6 text-center text-[10px] uppercase tracking-[0.35em] text-white/25">
-          hệ thống ghi nhận mọi khoản nợ — kể cả khoản bạn chưa từng thấy
+        <div className="mt-6 text-center text-[10px] uppercase leading-relaxed tracking-[0.3em] text-white/30">
+          dành cho những người đàn ông sẵn sàng trả nợ
+          
         </div>
       </div>
     </div>

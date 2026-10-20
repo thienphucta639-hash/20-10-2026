@@ -19,7 +19,7 @@ export function decodeState(s: string): SharePayload | null {
     if (
       obj &&
       typeof obj.r === "string" &&
-      ["me", "vo", "chi", "co"].includes(obj.r) &&
+      ["me", "vo", "chi", "ba", "codi"].includes(obj.r) &&
       Array.isArray(obj.a) &&
       obj.a.every((n: unknown) => typeof n === "number" && Number.isFinite(n))
     ) {

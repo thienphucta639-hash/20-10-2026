@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CornerDownLeft, ScanBarcode } from "lucide-react";
-import { fmt, type LineItem, type RelConfig } from "../lib/data";
-import { keyTick, payBeep, scanBeep } from "../lib/sound";
+import { ArrowLeft, CornerDownLeft, ScanBarcode } from "lucide-react";
+import { buildItems, fmt, type LineItem, type RelConfig } from "../lib/data";
+import { bedFadeDown, cashRegister, chipTap, heartbeat, reflectChime, rulerDown, rulerUp, scanLine } from "../lib/sound";
 import Odometer from "./Odometer";
 
 interface Props {
   rel: RelConfig;
   onDone: (raws: number[]) => void;
+  onBack: () => void;
+  startAt?: number | null;
+  initialRaws?: number[];
 }
 
 const slide = {
@@ -16,12 +19,19 @@ const slide = {
   exit: { x: -90, opacity: 0 },
 };
 
-export default function Scanner({ rel, onDone }: Props) {
+export default function Scanner({ rel, onDone, onBack, startAt, initialRaws }: Props) {
   const qs = rel.questions;
-  const [raws, setRaws] = useState<number[]>(() => qs.map((q) => q.def));
-  const [idx, setIdx] = useState(0);
-  const [items, setItems] = useState<LineItem[]>([]);
-  const [phase, setPhase] = useState<"ask" | "pay">("ask");
+  const [raws, setRaws] = useState<number[]>(
+    () => initialRaws ?? qs.map((q) => q.def)
+  );
+  const [idx, setIdx] = useState(startAt ?? 0);
+  const [items, setItems] = useState<LineItem[]>(() =>
+    startAt !== null && startAt !== undefined && initialRaws
+      ? buildItems(rel, initialRaws).slice(0, startAt)
+      : []
+  );
+  const [phase, setPhase] = useState<"ask" | "reflect" | "pay" | "settle">("ask");
+  const [lastItem, setLastItem] = useState<LineItem | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const phaseRef = useRef(phase);
@@ -32,6 +42,12 @@ export default function Scanner({ rel, onDone }: Props) {
   const totalQty = useMemo(() => items.reduce((s, it) => s + it.qty, 0), [items]);
 
   useEffect(() => {
+    // Chỉ tự động focus trên máy có chuột. Trên điện thoại việc này
+    // bật bàn phím che mất màn hình mỗi câu hỏi — rất khó chịu.
+    const finePointer =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(pointer: fine)").matches;
+    if (!finePointer) return;
     const t = setTimeout(() => {
       inputRef.current?.focus({ preventScroll: true });
       inputRef.current?.select?.();
@@ -53,31 +69,68 @@ export default function Scanner({ rel, onDone }: Props) {
       unit: q.qtyUnit,
       note: q.note?.(v, nextRaws),
     };
-    scanBeep();
+    scanLine();
     setItems((arr) => [...arr, item]);
-    if (idx === qs.length - 1) {
-      setTimeout(() => {
+    setLastItem(item);
+
+    // nhịp lặng: để con số vừa hiện ra kịp thấm
+    setTimeout(() => { reflectChime(); setPhase("reflect"); bedFadeDown(0.01, 1.8); }, 420);
+    setTimeout(() => {
+      if (startAt !== null && startAt !== undefined) {
+        onDone(nextRaws);
+        return;
+      }
+      if (idx === qs.length - 1) {
         setPhase("pay");
-        setBusy(false);
-      }, 420);
-    } else {
-      setTimeout(() => {
+      } else {
         setIdx(idx + 1);
-        setBusy(false);
-      }, 320);
+        setPhase("ask");
+      }
+      setBusy(false);
+    }, 5200);
+  };
+
+  /** lùi lại câu trước — hoặc thoát ra chọn lại người nếu đang ở câu 1 */
+  const goBack = () => {
+    if (busy) return;
+    rulerDown();
+    if (phase === "pay") {
+      setPhase("ask");
+      setItems((arr) => arr.slice(0, -1));
+      setIdx(qs.length - 1);
+      return;
     }
+    if (idx === 0) {
+      onBack();
+      return;
+    }
+    setItems((arr) => arr.slice(0, -1));
+    setIdx(idx - 1);
   };
 
   const pay = () => {
     if (busy) return;
     setBusy(true);
-    payBeep();
-    setTimeout(() => onDone(raws), 650);
+    cashRegister();
+    heartbeat();
+    setTimeout(heartbeat, 2400);
+    setTimeout(heartbeat, 4800);
+    setPhase("settle");
+    // nhịp lặng có chủ đích trước khi cuộn giấy chạy
+    setTimeout(() => onDone(raws), 12000);
   };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" || e.key === "Backspace") {
+        if (phaseRef.current === "ask" || phaseRef.current === "pay") {
+          e.preventDefault();
+          goBack();
+        }
+        return;
+      }
       if (e.key !== "Enter") return;
+      if (phaseRef.current === "settle" || phaseRef.current === "reflect") return;
       e.preventDefault();
       if (phaseRef.current === "ask") commit();
       else pay();
@@ -88,14 +141,33 @@ export default function Scanner({ rel, onDone }: Props) {
   }, [idx, raws]);
 
   const setRaw = (v: number) => {
-    keyTick();
     setRaws((rs) => rs.map((r, i) => (i === idx ? v : r)));
+  };
+  /** chọn một mức — cảm giác "chốt" */
+  const pickRaw = (v: number) => {
+    chipTap();
+    setRaw(v);
+  };
+  /** bấm tăng/giảm — cảm giác "gõ phím" */
+  const stepRaw = (v: number) => {
+    const cur = Number.isFinite(raws[idx]) ? (raws[idx] as number) : 0;
+    if (v > cur) rulerUp();
+    else rulerDown();
+    setRaw(v);
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
+    <div className="safe-x safe-b mx-auto w-full max-w-6xl px-4 py-10 sm:py-14">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2 text-[10px] uppercase tracking-[0.3em] text-dim-green sm:text-xs">
-        <span>{"// BƯỚC 02 — ĐANG QUÉT MẶT HÀNG VÔ HÌNH"}</span>
+        <button
+          onClick={goBack}
+          disabled={busy}
+          className="flex min-h-9 items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-white/45 transition-colors active:text-[#00ff41] disabled:opacity-30"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" strokeWidth={2.4} />
+          {idx === 0 ? "đổi người" : "câu trước"}
+        </button>
+        <span className="hidden sm:inline">{`BƯỚC 02 · ${rel.pronounUp}`}</span>
         <span>
           khách: <span className="text-glow">[{rel.shortName}]</span>
         </span>
@@ -144,10 +216,7 @@ export default function Scanner({ rel, onDone }: Props) {
                   transition={{ type: "spring", stiffness: 240, damping: 26 }}
                   className="flex flex-1 flex-col"
                 >
-                  <div className="mb-2 text-[10px] uppercase tracking-[0.3em] text-[#00ff41]/40">
-                    mã hàng: {q.id.toUpperCase()}-VH — khối lượng: tính bằng cả đời người
-                  </div>
-                  <h2 className="font-vt text-3xl leading-tight text-glow sm:text-5xl">
+                  <h2 className="text-balance font-vt text-[clamp(1.6rem,6.4vw,2.9rem)] leading-tight text-glow">
                     {q.prompt}
                   </h2>
 
@@ -155,34 +224,76 @@ export default function Scanner({ rel, onDone }: Props) {
                   <div className="mt-8">
                     {q.input === "number" ? (
                       <div>
-                        <div className="flex items-end gap-x-4">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            aria-label="giảm"
+                            className="stepper shrink-0"
+                            onClick={() => stepRaw(Math.max(q.min, (Number(raw) || 0) - 1))}
+                          >
+                            −
+                          </button>
                           <input
                             ref={inputRef}
                             type="number"
                             inputMode="numeric"
+                            pattern="[0-9]*"
                             min={q.min}
                             max={q.max}
                             value={Number.isFinite(raw) ? String(raw) : ""}
                             onChange={(e) =>
                               setRaw(e.target.value === "" ? 0 : Number(e.target.value))
                             }
-                            className="pos-input w-40 max-w-full text-center font-vt text-5xl leading-none sm:w-48 sm:text-7xl"
+                            className="pos-input min-w-0 flex-1 text-center font-vt text-5xl leading-none sm:text-6xl"
                           />
-                          <span className="pb-1.5 font-vt text-xl text-[#00ff41]/60 sm:text-2xl">
-                            {q.unitLabel}
+                          <button
+                            type="button"
+                            aria-label="tăng"
+                            className="stepper shrink-0"
+                            onClick={() => stepRaw(Math.min(q.max, (Number(raw) || 0) + 1))}
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="mt-3 text-center font-vt text-xl text-[#00ff41]/60">
+                          {q.unitLabel}
+                        </div>
+                        <div className="mt-1 text-center text-[10px] uppercase tracking-[0.2em] text-white/30">
+                          chạm số để gõ — hoặc bấm − / +
+                        </div>
+                      </div>
+                    ) : q.buckets ? (
+                      <div>
+                        <div className="min-h-[3.2rem]">
+                          <span className="block font-vt text-3xl leading-tight text-glow sm:text-4xl">
+                            “{q.buckets[Math.min(raw, q.buckets.length - 1)].label}”
                           </span>
                         </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {q.buckets.map((b, k) => (
+                            <button
+                              key={k}
+                              type="button"
+                              onClick={() => pickRaw(k)}
+                              className={`chip ${
+                                Math.min(raw, q.buckets!.length - 1) === k ? "chip--on" : ""
+                              }`}
+                            >
+                              {b.label}
+                            </button>
+                          ))}
+                        </div>
                         <div className="mt-2 text-[10px] uppercase tracking-[0.2em] text-white/30">
-                          (nhập từ {q.min} đến {fmt(q.max)} — chạm 2 lần để sửa)
+                          chạm chọn mức gần đúng nhất
                         </div>
                       </div>
                     ) : (
                       <div>
-                        <div className="mb-4 flex items-end gap-4">
+                        <div className="mb-3 flex items-end gap-4">
                           <span className="font-vt text-6xl leading-none text-glow sm:text-7xl">
                             {String(raw).padStart(2, "0")}
                           </span>
-                          <span className="pb-2 font-vt text-2xl text-[#00ff41]/60">
+                          <span className="pb-2 font-vt text-xl text-[#00ff41]/60 sm:text-2xl">
                             {q.unitLabel}
                           </span>
                         </div>
@@ -194,10 +305,11 @@ export default function Scanner({ rel, onDone }: Props) {
                           step={q.step}
                           value={raw}
                           onChange={(e) => setRaw(Number(e.target.value))}
+                          onPointerUp={() => chipTap()}
                           className="pos-range mt-2"
                         />
                         <div className="mt-3 flex justify-between text-[10px] uppercase tracking-[0.15em] text-white/30">
-                          <span>ít thôi (chắc?)</span>
+                          <span>ít thôi</span>
                           <span>thành thật đi</span>
                         </div>
                       </div>
@@ -218,17 +330,65 @@ export default function Scanner({ rel, onDone }: Props) {
                     <button
                       onClick={commit}
                       disabled={busy}
-                      className="pos-btn group flex w-full items-center justify-center gap-3 px-6 py-4 text-3xl sm:text-4xl"
+                      className="pos-btn group flex min-h-[3.5rem] w-full items-center justify-center gap-3 px-5 py-4 text-[clamp(1.5rem,6vw,2.25rem)]"
                     >
                       <CornerDownLeft className="h-6 w-6" strokeWidth={2.5} />
                       QUÉT VÀO PHIẾU
                     </button>
                     <div className="mt-2 text-center text-[10px] uppercase tracking-[0.25em] text-white/25">
-                      hoặc nhấn Enter
+                      hoặc nhấn phím Enter
                     </div>
                   </div>
                 </motion.div>
-              ) : (
+              ) : phase === "reflect" ? (
+                <motion.div
+                  key={`r-${idx}`}
+                  initial={{ opacity: 0, filter: "blur(10px)" }}
+                  animate={{ opacity: 1, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, filter: "blur(8px)", transition: { duration: 0.6 } }}
+                  transition={{ duration: 1 }}
+                  className="flex flex-1 flex-col items-center justify-center py-10 text-center"
+                >
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2, duration: 0.8 }}
+                    className="text-[10px] uppercase tracking-[0.35em] text-dim-green"
+                  >
+                    đã ghi vào hóa đơn
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.85, filter: "blur(12px)" }}
+                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                    transition={{ delay: 0.45, duration: 1.2, ease: [0.2, 0.9, 0.3, 1] }}
+                    className="mt-5 font-vt leading-none text-glow-strong"
+                    style={{ fontSize: "clamp(3rem, 15vw, 5.5rem)" }}
+                  >
+                    {fmt(lastItem?.qty ?? 0)}
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.1, duration: 0.9 }}
+                    className="mt-3 max-w-xs text-balance font-plex text-[12px] uppercase tracking-[0.18em] text-white/70"
+                  >
+                    {lastItem?.unit} {lastItem?.name.toLowerCase()}
+                  </motion.div>
+
+                  {lastItem?.note && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 2, duration: 1 }}
+                      className="mt-6 max-w-[17rem] text-balance font-plex text-[11px] leading-relaxed text-[#00ff41]/60"
+                    >
+                      {lastItem.note}
+                    </motion.div>
+                  )}
+                </motion.div>
+              ) : phase === "pay" ? (
                 <motion.div
                   key="pay"
                   variants={slide}
@@ -251,13 +411,69 @@ export default function Scanner({ rel, onDone }: Props) {
                   <button
                     onClick={pay}
                     disabled={busy}
-                    className="pos-btn pos-btn--fill mt-10 w-full whitespace-nowrap px-6 py-5 text-[2.1rem] sm:py-6 sm:text-6xl"
+                    className="pos-btn pos-btn--fill mt-10 w-full px-4 py-5 text-[clamp(1.7rem,7.5vw,3.4rem)] sm:py-6"
                   >
                     [ THANH TOÁN ]
                   </button>
                   <div className="mt-3 text-[10px] uppercase tracking-[0.25em] text-dim-green">
-                    máy pos này không nhận tiền — cứ bấm đi rồi hiểu
+                    hóa đơn này không nhận tiền — bấm để xem vì sao
                   </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="settle"
+                  initial={{ opacity: 0, filter: "blur(8px)" }}
+                  animate={{ opacity: 1, filter: "blur(0px)" }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.9, ease: "easeOut" }}
+                  className="flex flex-1 flex-col items-center justify-center text-center"
+                >
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1 }}
+                    className="text-[10px] uppercase tracking-[0.35em] text-dim-green"
+                  >
+                    tổng kết sổ sách
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, filter: "blur(12px)" }}
+                    animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+                    transition={{ delay: 0.6, duration: 1.6, ease: [0.2, 0.9, 0.3, 1] }}
+                    className="mt-5 font-vt leading-none text-glow-strong"
+                    style={{ fontSize: "clamp(2.8rem, 14vw, 5rem)" }}
+                  >
+                    {fmt(totalQty)}
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 1.8, duration: 1 }}
+                    className="mt-2 text-[11px] uppercase tracking-[0.25em] text-white/45"
+                  >
+                    đơn vị công sức — chỉ từ 5 câu hỏi
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 4, duration: 1.4 }}
+                    className="mx-auto mt-10 h-px w-20 bg-[#00ff41]/40"
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 14, filter: "blur(10px)" }}
+                    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                    transition={{ delay: 5, duration: 1.8, ease: "easeOut" }}
+                    className="mt-8 max-w-sm text-balance font-vt text-[clamp(1.6rem,6.6vw,2.9rem)] leading-tight text-glow-strong sm:max-w-md">
+                    {rel.settleLine}
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 8, duration: 1.2 }}
+                    className="blink mt-10 text-[10px] uppercase tracking-[0.3em] text-white/30"
+                  >
+                    máy đang nạp cuộn giấy…
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -279,7 +495,7 @@ export default function Scanner({ rel, onDone }: Props) {
               {items.length === 0 ? (
                 <div className="flex h-full min-h-40 items-center justify-center">
                   <span className="blink text-[11px] uppercase tracking-[0.3em] text-white/25">
-                    {"<< chưa có mặt hàng — máy đang chờ >>"}
+                    "từng câu trả lời sẽ hiện ra ở đây"
                   </span>
                 </div>
               ) : (
@@ -296,7 +512,7 @@ export default function Scanner({ rel, onDone }: Props) {
                       </span>
                     </div>
                     <div className="mt-0.5 flex items-center justify-between font-plex text-[10px] text-white/30">
-                      <span>{it.note ?? "giá niêm yết: không niêm yết được"}</span>
+                      <span>{it.note ?? "chưa từng được trả"}</span>
                       <span className="text-[#00ff41]/60">∞</span>
                     </div>
                   </div>
